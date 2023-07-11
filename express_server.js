@@ -48,8 +48,7 @@ app.get('/u/:id', (req, res) => {
 app.post('/urls/:id/delete', (req, res) => {
   const { id } = req.params;
   delete urlDatabase[id];
-  const templateVars = { urls: urlDatabase };
-  res.render('urls_index', templateVars);
+  res.redirect('/urls');
 });
 
 app.listen(PORT, () => {
@@ -66,5 +65,3 @@ const generateRandomString = (stringLength) => {
   const alreadyExists = Object.keys(urlDatabase).includes(randomString);
   return alreadyExists ? generateRandomString(stringLength) : randomString;
 };
-
-console.log(generateRandomString(6));
