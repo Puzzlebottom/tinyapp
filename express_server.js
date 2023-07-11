@@ -13,38 +13,50 @@ const urlDatabase = {
   '9sm5xK': 'http://www.google.com'
 };
 
+/**
+ * INDEX
+ */
+
 app.get('/', (req, res) => {
   const { username } = req.cookies;
-  const templateVars = { username };
   if (username) {
-    res.redirect('/urls');
+    return res.redirect('/urls');
   }
-  res.render('register', templateVars);
+  return res.redirect('/register');
 });
+
+/**
+ * LOGIN / REGISTRATION
+ */
 
 app.post('/login', (req, res) => {
   const { username } = req.body;
   res.cookie('username', username);
-  res.redirect('/urls');
+  return res.redirect('/urls');
 });
 
 app.post('/logout', (req, res) => {
   res.clearCookie('username');
-  res.redirect('/');
+  return res.redirect('/');
 });
 
-app.get('/urls', (req, res) => {
-  const templateVars = {
-    username: req.cookies['username'],
-    urls: urlDatabase
-  };
-  res.render('urls_index', templateVars);
+app.get('/register', (req, res) => {
+  const templateVars = { username: req.cookies['username'] };
+  return res.render('register', templateVars);
 });
+
+app.post('/register', (req, res) => {
+  const { email, password } = req.body;
+  //do something
+  return res.redirect('/urls');
+});
+
+/**
+ * ADD URL
+ */
 
 app.get('/urls/new', (req, res) => {
-  const templateVars = {
-    username: req.cookies['username'],
-  };
+  const templateVars = { username: req.cookies['username'] };
   res.render('urls_new', templateVars);
 });
 
@@ -56,12 +68,19 @@ app.post('/urls', (req, res) => {
   res.render('urls_show', templateVars);
 });
 
-app.get('/urls/:id', (req, res) => {
+/**
+ * DELETE URL
+ */
+
+app.post('/urls/:id/delete', (req, res) => {
   const { id } = req.params;
-  const longURL = urlDatabase[id];
-  const templateVars = { username: req.cookies['username'], id, longURL };
-  res.render('urls_show', templateVars);
+  delete urlDatabase[id];
+  res.redirect('/urls');
 });
+
+/**
+ * UPDATE URL
+ */
 
 app.post('/urls/:id', (req, res) => {
   const { id } = req.params;
@@ -70,17 +89,39 @@ app.post('/urls/:id', (req, res) => {
   res.redirect('/urls');
 });
 
+/**
+ * SINGLE URL
+ */
+
+app.get('/urls/:id', (req, res) => {
+  const { id } = req.params;
+  const longURL = urlDatabase[id];
+  const templateVars = { username: req.cookies['username'], id, longURL };
+  res.render('urls_show', templateVars);
+});
+
+/**
+ * ALL URLS
+ */
+
+app.get('/urls', (req, res) => {
+  const templateVars = {
+    username: req.cookies['username'],
+    urls: urlDatabase
+  };
+  res.render('urls_index', templateVars);
+});
+
+/**
+ * NAVIGATE TO LINK
+ */
+
 app.get('/u/:id', (req, res) => {
   const { id } = req.params;
   const longURL = urlDatabase[id];
   res.redirect(longURL);
 });
 
-app.post('/urls/:id/delete', (req, res) => {
-  const { id } = req.params;
-  delete urlDatabase[id];
-  res.redirect('/urls');
-});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
