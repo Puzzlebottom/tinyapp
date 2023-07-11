@@ -44,9 +44,13 @@ app.get('/', (req, res) => {
  */
 
 app.post('/login', (req, res) => {
-  const { username } = req.body;
-  res.cookie('username', username);
-  return res.redirect('/urls');
+  const { email, password } = req.body;
+  const user = getUser(email);
+  if (user.password === password) {
+    res.cookie('user_id', user.id);
+    return res.redirect('/urls');
+  }
+  return res.status(401);
 });
 
 app.post('/logout', (req, res) => {
@@ -62,6 +66,23 @@ app.get('/register', (req, res) => {
 
 app.post('/register', (req, res) => {
   const { email, password } = req.body;
+
+  if (!email || !password) {
+    res.statusMessage = 'email and password fields cannot be blank';
+    return res.status(400).end();
+  }
+
+  const user = getUser(email);
+  if (user && user.password !== password) {
+    res.statusMessage = 'a user with that email has already been registered';
+    return res.status(400).end();
+  }
+
+  if (user && user.password === password) {
+    res.cookie('user_id', user.id);
+    return res.redirect('/urls');
+  }
+
   const id = generateRandomString(6);
   users[id] = { id, email, password };
   res.cookie('user_id', id);
@@ -126,11 +147,8 @@ app.get('/urls/:id', (req, res) => {
  */
 
 app.get('/urls', (req, res) => {
-  const userID = req.cookies['user_id'];
-  console.log(userID);
-
-  const user = users[userID];
-  console.log(user);
+  const id = req.cookies['user_id'];
+  const user = users[id];
   const templateVars = { user, urls: urlDatabase };
   return res.render('urls_index', templateVars);
 });
@@ -147,7 +165,7 @@ app.get('/u/:id', (req, res) => {
 
 
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
+  console.log(`TinyApp server listening on port ${PORT}!`);
 });
 
 const generateRandomString = (stringLength) => {
@@ -160,3 +178,11 @@ const generateRandomString = (stringLength) => {
   const alreadyExists = Object.keys(urlDatabase).includes(randomString);
   return alreadyExists ? generateRandomString(stringLength) : randomString;
 };
+
+const getUser = (email) => {
+  for (const user of Object.values(users)) {
+    if (user.email === email) return user;
+  }
+  return null;
+};
+
