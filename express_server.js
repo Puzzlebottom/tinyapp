@@ -14,7 +14,12 @@ const urlDatabase = {
 };
 
 app.get('/', (req, res) => {
-  res.send('Hello!');
+  const { username } = req.cookies;
+  const templateVars = { username };
+  if (username) {
+    res.redirect('/urls');
+  }
+  res.render('register', templateVars);
 });
 
 app.post('/login', (req, res) => {
@@ -25,7 +30,7 @@ app.post('/login', (req, res) => {
 
 app.post('/logout', (req, res) => {
   res.clearCookie('username');
-  res.redirect('/urls');
+  res.redirect('/');
 });
 
 app.get('/urls', (req, res) => {
