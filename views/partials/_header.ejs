@@ -18,10 +18,11 @@
         <button class="btn btn-outline-light" type="submit">Log Out</button>
       </form>
       <% } else { %>
-        <form class="form-inline col col-4 justify-content-end" method="POST" action="/login">
-          <input class="form-control m-0 mr-3" type="email" name="email" placeholder="name@email.com"
-            style="width: 300px; margin: 1em" />
+        <form class="form-inline col justify-content-end" method="GET" action="/login">
           <button class="btn btn-outline-light" type="submit">Login</button>
+        </form>
+        <form class="form-inline col justify-content-end" method="GET" action="/register">
+          <button class="btn btn-outline-light" type="submit">Register</button>
         </form>
         <% } %>
   </nav>

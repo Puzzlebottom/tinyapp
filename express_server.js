@@ -40,23 +40,33 @@ app.get('/', (req, res) => {
 });
 
 /**
- * LOGIN / REGISTRATION
+ * LOGIN / LOGOUT
  */
+
+app.get('/login', (req, res) => {
+  const user = users[req.cookies['user_id']];
+  const templateVars = { user };
+  return res.render('login', templateVars);
+});
 
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const user = getUser(email);
-  if (user.password === password) {
+  if (user && user.password === password) {
     res.cookie('user_id', user.id);
     return res.redirect('/urls');
   }
-  return res.status(401);
+  return res.status(403).end();
 });
 
 app.post('/logout', (req, res) => {
   res.clearCookie('user_id');
-  return res.redirect('/');
+  return res.redirect('/login');
 });
+
+/**
+ * REGISTRATION
+ */
 
 app.get('/register', (req, res) => {
   const user = users[req.cookies['user_id']];
@@ -66,13 +76,13 @@ app.get('/register', (req, res) => {
 
 app.post('/register', (req, res) => {
   const { email, password } = req.body;
+  const user = getUser(email);
 
   if (!email || !password) {
     res.statusMessage = 'email and password fields cannot be blank';
     return res.status(400).end();
   }
 
-  const user = getUser(email);
   if (user && user.password !== password) {
     res.statusMessage = 'a user with that email has already been registered';
     return res.status(400).end();
