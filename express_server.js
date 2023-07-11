@@ -1,13 +1,15 @@
+/* eslint-disable camelcase */
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const app = express();
+const ALPHANUMERIC_CHARS = require('./constants');
 const PORT = 8080; // default port 8080
+
+const app = express();
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-const ALPHANUMERIC_CHARS = require('./constants');
 
 const urlDatabase = {
   b2xVn2: 'http://www.lighthouselabs.ca',
@@ -44,8 +46,11 @@ app.get('/', (req, res) => {
  */
 
 app.get('/login', (req, res) => {
-  const user = users[req.cookies['user_id']];
-  const templateVars = { user };
+  const { user_id } = req.cookies;
+  if (user_id) {
+    return res.redirect('/urls');
+  }
+  const templateVars = { user: users[user_id] };
   return res.render('login', templateVars);
 });
 
@@ -69,8 +74,12 @@ app.post('/logout', (req, res) => {
  */
 
 app.get('/register', (req, res) => {
-  const user = users[req.cookies['user_id']];
-  const templateVars = { user };
+  const { user_id } = req.cookies;
+  if (user_id) {
+    return res.redirect('/urls');
+  }
+
+  const templateVars = { user: users[user_id] };
   return res.render('register', templateVars);
 });
 
@@ -105,16 +114,24 @@ app.post('/register', (req, res) => {
  */
 
 app.get('/urls/new', (req, res) => {
-  const user = users[req.cookies['user_id']];
-  const templateVars = { user };
+  const userId = req.cookies['user_id'];
+  if (!userId) {
+    return res.redirect('/login');
+  }
+  const templateVars = { user: users[userId] };
   return res.render('urls_new', templateVars);
 });
 
 app.post('/urls', (req, res) => {
+  const userId = req.cookies['user_id'];
+  if (!userId) {
+    return res.send('UNAUTHORIZED: You must have a registered account and be logged in in order to use TinyURL.\n\n');
+  }
+
   const { longURL } = req.body;
   const id = generateRandomString(6);
   urlDatabase[id] = longURL;
-  const user = users[req.cookies['user_id']];
+  const user = users[userId];
   const templateVars = { user, id, longURL };
   return res.render('urls_show', templateVars);
 });
@@ -158,8 +175,7 @@ app.get('/urls/:id', (req, res) => {
 
 app.get('/urls', (req, res) => {
   const id = req.cookies['user_id'];
-  const user = users[id];
-  const templateVars = { user, urls: urlDatabase };
+  const templateVars = { user: users[id], urls: urlDatabase };
   return res.render('urls_index', templateVars);
 });
 
@@ -170,6 +186,9 @@ app.get('/urls', (req, res) => {
 app.get('/u/:id', (req, res) => {
   const { id } = req.params;
   const longURL = urlDatabase[id];
+  if (!longURL) {
+    return res.send(`LINK NOT FOUND: An address corresponding to TinyURL ${id} doesn't exist in our records.\n\n`);
+  }
   return res.redirect(longURL);
 });
 

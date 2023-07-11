@@ -16,14 +16,12 @@
     <main style="margin: 1em">
       <div class="card container p-0" style="width: 60em">
         <div class="card-header text-center">
-          <h3 class="card-title">Login to TinyURL</h3>
+          <h3 class="card-title">Unauthorized</h3>
         </div>
         <div class="card-body row justify-content-center">
-          <form class="form col col-4 text-center" action="/login" method="POST">
-            <input class="form-control m-2" type="email" name="email" placeholder="name@email.com" />
-            <input class="form-control m-2" type="password" name="password" placeholder="Password" />
-            <button type="submit" class="btn btn-primary m-2">Login</button>
-          </form>
+          <h5>
+            <%= message %>
+          </h5>
         </div>
         <div class="card-footer text-center text-muted">
           <p>Not Registered? <a href="./register">Register</a></p>
