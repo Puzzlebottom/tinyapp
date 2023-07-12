@@ -1,4 +1,3 @@
-const { timeStamp } = require('console');
 const { ALPHANUMERIC_CHARS, EMAIL_VALIDATION_REGEX } = require('./constants');
 
 const generateRandomString = function(database, stringLength) {
@@ -60,7 +59,7 @@ const logVisit = function(urlDatabase, urlID, visitorID) {
     visits.visitors.push(visitorID);
     visits.unique = visits.unique += 1;
   }
-  visits.logs.push({ visitorID, timeStamp: timeStamp() });
+  visits.logs.unshift({ visitorID, timeStamp: new Date().toGMTString() });
 };
 
 module.exports = { generateRandomString, getUserByEmail, logVisit, renderUnauthorized, urlsForUser };

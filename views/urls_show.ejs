@@ -31,14 +31,40 @@
             <button type="submit" class="btn btn-primary">Submit</button>
           </div>
         </form>
-        <div>TOTAL: <%= visits.total %>
+
+      </div>
+    </div>
+    <div class="container justify-content-center">
+      <div class="row">
+        <div class="card m-3 p-0 col text-center">
+          <div class="card-header">
+            <h5>Visits</h5>
+          </div>
+          <div class="card-body">
+            <div class="card-text mb-3">
+              TOTAL: <%= visits.total %>
+            </div>
+            <div class="card-text mb-3">
+              UNIQUE: <%= visits.unique %>
+            </div>
+
+          </div>
         </div>
-        <div>UNIQUE: <%= visits.unique %>
-        </div>
-        <div>LOGS: <%= visits.logs %>
+        <div class="card m-3 p-0 col text-center" style="max-height: 55vh;">
+          <div class="card-header">
+            <h5>Logs</h5>
+          </div>
+          <div class="card-body" style="overflow-y: scroll;">
+            <% for (const log of visits.logs) { %>
+              <p>
+                <%= log.timeStamp %>
+              </p>
+              <% } %>
+          </div>
         </div>
       </div>
     </div>
+
     <!-- Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
       integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
