@@ -1,3 +1,4 @@
+const { timeStamp } = require('console');
 const { ALPHANUMERIC_CHARS, EMAIL_VALIDATION_REGEX } = require('./constants');
 
 const generateRandomString = function(database, stringLength) {
@@ -47,4 +48,15 @@ const urlsForUser = function(urlDatabase, userDatabase, userID) {
   return urls;
 };
 
-module.exports = { generateRandomString, getUserByEmail, renderUnauthorized, urlsForUser };
+const logVisit = function(urlID, urlDatabase, visitorID) {
+  const url = urlDatabase[urlID];
+  const { visits } = url;
+  visits.total = visits.total += 1;
+  if (!visits.vistors.includes(visitorID)) {
+    visits.visitors.push(visitorID);
+    visits.unique = visits.unique += 1;
+  }
+  visits.logs.push({ visitorID, timeStamp: new timeStamp() });
+};
+
+module.exports = { generateRandomString, getUserByEmail, logVisit, renderUnauthorized, urlsForUser };

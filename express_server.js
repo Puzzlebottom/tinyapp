@@ -5,7 +5,7 @@ const { ERROR_MSG, SESSION_COOKIE_KEYS, PORT } = require('./constants');
 const argon2 = require('argon2');
 const cookieSession = require('cookie-session');
 const express = require('express');
-const { generateRandomString, getUserByEmail, renderUnauthorized, urlsForUser } = require('./helpers');
+const { generateRandomString, getUserByEmail, logVisit, renderUnauthorized, urlsForUser } = require('./helpers');
 const methodOverride = require('method-override');
 
 const app = express();
@@ -148,9 +148,10 @@ app.post('/urls', (req, res) => {
 
   const { longURL } = req.body;
   const id = generateRandomString(urlDatabase, 6);
-  urlDatabase[id] = { longURL, userID };
+  const visits = { total: 0, unique: 0, visitors: [], logs: [] };
+  urlDatabase[id] = { longURL, userID, visits };
   const user = users[userID];
-  const templateVars = { user, id, longURL };
+  const templateVars = { user, id, longURL }; //throw more data in hurr
   return res.render('urls_show', templateVars);
 });
 
@@ -233,11 +234,20 @@ app.get('/urls', (req, res) => {
  */
 
 app.get('/u/:id', (req, res) => {
+  let { visitor_id } = req.session;
+
+  if (!visitor_id) {
+    visitor_id = generateRandomString(6);
+    res.session.visitor_id = visitor_id;
+  }
+
   const { id } = req.params;
   const { longURL } = urlDatabase[id];
   if (!longURL) {
     return res.send(`LINK NOT FOUND: An address corresponding to TinyURL ${id} doesn't exist in our records.\n\n`);
   }
+  logVisit(id, urlDatabase, visitor_id);
+
   return res.redirect(longURL);
 });
 
