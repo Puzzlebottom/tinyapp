@@ -1,10 +1,12 @@
 /* eslint-disable space-before-function-paren */
 /* eslint-disable camelcase */
-const argon2 = require('argon2');
-const express = require('express');
-const cookieSession = require('cookie-session');
 const { ALPHANUMERIC_CHARS, ERROR_MSG, SESSION_COOKIE_KEYS, PORT } = require('./constants');
+
+const argon2 = require('argon2');
+const cookieSession = require('cookie-session');
+const express = require('express');
 const { generateRandomString, getUserByEmail, renderUnauthorized, urlsForUser } = require('./helpers');
+const methodOverride = require('method-override');
 
 const app = express();
 const urlDatabase = {};
@@ -16,6 +18,7 @@ const users = {};
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
+app.use(methodOverride('_method'));
 app.use(cookieSession({
   name: 'session',
   keys: SESSION_COOKIE_KEYS,
