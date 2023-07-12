@@ -8,6 +8,14 @@
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
     integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous" />
+  <script type="text/javascript">
+    const copy = (id) => {
+      const copyText = document.getElementById(id);
+      copyText.select();
+      navigator.clipboard.writeText(copyText.value);
+    }
+
+  </script>
   <title>TinyApp</title>
 </head>
 
@@ -16,18 +24,29 @@
     <main style="margin: 1em;">
       <h3>My URLs</h3>
       <table class="table">
+        <colgroup>
+          <col span="1" style="width: 5%;">
+          <col span="1" style="width: 15%;">
+          <col span="1" style="width: 60%;">
+          <col span="1" style="width: 10%;">
+          <col span="1" style="width: 10%;">
+        </colgroup>
         <thead>
           <tr>
+            <th scope="col"></th>
             <th scope="col">Short URL ID</th>
             <th scope="col">Long URL</th>
             <th scope="col">Edit</th>
             <th scope="col">Delete</th>
-
           </tr>
         </thead>
         <tbody>
           <% for (const id of Object.keys(urls)) { %>
             <tr>
+              <td>
+                <button type="button" class="btn btn-outline-primary p-1 mr-3" onclick="copy('<%= id %>')">COPY</button>
+                <input type="hidden" value="http://localhost:8080/u/<%= id  %>" id="<%= id %>">
+              </td>
               <td>
                 <%= id %>
               </td>
