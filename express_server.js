@@ -2,7 +2,7 @@
 /* eslint-disable camelcase */
 const argon2 = require('argon2');
 const express = require('express');
-const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
 const ALPHANUMERIC_CHARS = require('./constants');
 const PORT = 8080; // default port 8080
 
@@ -10,7 +10,11 @@ const app = express();
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['abecedarian', 'brodingnagian', 'cassandraic', 'defenestration', 'equanimious', 'flimflammery'],
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}));
 
 
 const urlDatabase = {
@@ -42,7 +46,7 @@ const users = {
  */
 
 app.get('/', (req, res) => {
-  const { user_id } = req.cookies;
+  const { user_id } = req.session;
   if (user_id) {
     return res.redirect('/urls');
   }
@@ -54,7 +58,7 @@ app.get('/', (req, res) => {
  */
 
 app.get('/login', (req, res) => {
-  const { user_id } = req.cookies;
+  const { user_id } = req.session;
   if (user_id) {
     return res.redirect('/urls');
   }
@@ -69,7 +73,7 @@ app.post('/login', async (req, res) => {
     await argon2.verify(user['password'], password)
       .then((isValidPassword) => {
         if (user && isValidPassword) {
-          res.cookie('user_id', user.id);
+          req.session.user_id = user.id;
           return res.redirect('/urls');
         }
         const message = '401 Error: Invalid Password';
@@ -89,7 +93,7 @@ app.post('/login', async (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('user_id');
+  req.session = null;
   return res.redirect('/login');
 });
 
@@ -98,7 +102,7 @@ app.post('/logout', (req, res) => {
  */
 
 app.get('/register', (req, res) => {
-  const { user_id } = req.cookies;
+  const { user_id } = req.session;
   if (user_id) {
     return res.redirect('/urls');
   }
@@ -128,7 +132,7 @@ app.post('/register', async (req, res) => {
         }
 
         if (user && isValidPassword) {
-          res.cookie('user_id', user.id);
+          req.session.user_id = user.id;
           return res.redirect('/urls');
         }
       })
@@ -142,7 +146,7 @@ app.post('/register', async (req, res) => {
       .then((hash) => {
         const id = generateRandomString(6);
         users[id] = { id, email, password: hash };
-        res.cookie('user_id', id);
+        req.session.user_id = id;
         return res.redirect('/urls');
       })
       .catch(() => {
@@ -158,7 +162,7 @@ app.post('/register', async (req, res) => {
  */
 
 app.get('/urls/new', (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session['user_id'];
   if (!userID) {
     return res.redirect('/login');
   }
@@ -167,7 +171,7 @@ app.get('/urls/new', (req, res) => {
 });
 
 app.post('/urls', (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session['user_id'];
   if (!userID) {
     return res.send('UNAUTHORIZED: You must have a registered account and be logged in in order to use TinyURL.\n\n');
   }
@@ -185,7 +189,7 @@ app.post('/urls', (req, res) => {
  */
 
 app.post('/urls/:id/delete', (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session['user_id'];
   if (!userID) {
     const message = 'Log in to your account to use TinyURL';
     return res.render('unauthorized', { message, user: null });
@@ -207,7 +211,7 @@ app.post('/urls/:id/delete', (req, res) => {
  */
 
 app.post('/urls/:id', (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session['user_id'];
   if (!userID) {
     const message = 'Log in to your account to use TinyURL';
     return res.render('unauthorized', { message, user: null });
@@ -230,7 +234,7 @@ app.post('/urls/:id', (req, res) => {
  */
 
 app.get('/urls/:id', (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session['user_id'];
   if (!userID) {
     const message = 'Log in to your account to use TinyURL';
     return res.render('unauthorized', { message, user: null });
@@ -252,7 +256,7 @@ app.get('/urls/:id', (req, res) => {
  */
 
 app.get('/urls', (req, res) => {
-  const userID = req.cookies['user_id'];
+  const userID = req.session['user_id'];
   if (!userID) {
     const message = 'Log in to your account to use TinyURL';
     return res.render('unauthorized', { message, user: null });
