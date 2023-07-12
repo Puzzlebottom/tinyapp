@@ -3,7 +3,7 @@
 const argon2 = require('argon2');
 const express = require('express');
 const cookieSession = require('cookie-session');
-const { ERROR_MSG, SESSION_COOKIE_KEYS, PORT } = require('./constants');
+const { ALPHANUMERIC_CHARS, ERROR_MSG, SESSION_COOKIE_KEYS, PORT } = require('./constants');
 const { generateRandomString, getUserByEmail, renderUnauthorized, urlsForUser } = require('./helpers');
 
 const app = express();
@@ -113,7 +113,7 @@ app.post('/register', async (req, res) => {
   } else {
     await argon2.hash(password)
       .then((hash) => {
-        const id = generateRandomString(urlDatabase, 6);
+        const id = generateRandomString(users, 6);
         users[id] = { id, email, password: hash };
         req.session.user_id = id;
         return res.redirect('/urls');

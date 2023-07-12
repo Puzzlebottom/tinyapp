@@ -1,14 +1,19 @@
 const { ALPHANUMERIC_CHARS, EMAIL_VALIDATION_REGEX } = require('./constants');
 
-const generateRandomString = (urlDatabase, stringLength) => {
+const generateRandomString = function(database, stringLength) {
+  if (arguments.length > 2) throw new Error('Error: too many arguments');
+  if (arguments.length < 2) throw new Error('Error: not enough arguments');
+  if (typeof database !== 'object' || typeof stringLength !== 'number') throw new Error('Error: invalid argument type');
+
+
   const totalNumberOfChars = ALPHANUMERIC_CHARS.length;
   let randomString = '';
   for (let i = 1; i <= stringLength; i++) {
     const randomIndex = Math.floor(Math.random() * totalNumberOfChars);
     randomString += ALPHANUMERIC_CHARS[randomIndex];
   }
-  const alreadyExists = Object.keys(urlDatabase).includes(randomString);
-  return alreadyExists ? generateRandomString(urlDatabase, stringLength) : randomString;
+  const alreadyExists = Object.keys(database).includes(randomString);
+  return alreadyExists ? generateRandomString(database, stringLength) : randomString;
 };
 
 const getUserByEmail = function(users, email) {
