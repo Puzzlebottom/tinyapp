@@ -24,7 +24,7 @@ describe('getUserEmail when it is not passed a valid argument', function() {
   });
 
   it('should throw an error if the argument passed is not the correct type', function() {
-    const notObject = () => getUserByEmail('notAnObject', 'name@email.com');
+    const notObject = () => getUserByEmail('not an Object', 'user@example.com');
     const notString = () => getUserByEmail(testUsers, ['not a string']);
 
     assert.throw(notObject, 'Error: invalid argument type');

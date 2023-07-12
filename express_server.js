@@ -221,7 +221,7 @@ app.get('/urls', (req, res) => {
   if (!userID) {
     return renderUnauthorized(ERROR_MSG.notLoggedIn(), res);
   }
-  const templateVars = { user: users[userID], urls: urlsForUser(urlDatabase, userID) };
+  const templateVars = { user: users[userID], urls: urlsForUser(urlDatabase, users, userID) };
   return res.render('urls_index', templateVars);
 });
 

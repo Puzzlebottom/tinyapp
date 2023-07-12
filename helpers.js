@@ -27,7 +27,12 @@ const renderUnauthorized = (message, resObject, user = null, statusCode) => {
   return resObject.render('unauthorized', { message, user });
 };
 
-const urlsForUser = (urlDatabase, userID) => {
+const urlsForUser = function(urlDatabase, userDatabase, userID) {
+  if (arguments.length > 3) throw new Error('Error: too many arguments');
+  if (arguments.length < 3) throw new Error('Error: not enough arguments');
+  if (typeof urlDatabase !== 'object' || typeof userDatabase !== 'object' || typeof userID !== 'string') throw new Error('Error: invalid argument type');
+  if (!userDatabase[userID]) throw new Error(`Error: User '${userID}' does not exist`);
+
   const urls = {};
   Object.keys(urlDatabase).forEach((key) => {
     if (urlDatabase[key].userID === userID) {
