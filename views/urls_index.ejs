@@ -33,7 +33,7 @@
               </td>
               <td>
                 <a href="<%= urls[id].longURL %>" target="_blank">
-                  <%= urls[id].longURL %>
+                  <%= urls[id].longURL.split('//').slice(-1)[0] %>
                 </a>
               </td>
               <td>
