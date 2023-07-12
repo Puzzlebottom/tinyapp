@@ -24,7 +24,10 @@
           </h5>
         </div>
         <div class="card-footer text-center text-muted">
-          <p>Not Registered? <a href="./register">Register</a></p>
+          <% if (!user) { %>
+            <a href="/login">Login</a>
+            <p>Not Registered? <a href="/register">Register</a></p>
+            <% } %>
         </div>
       </div>
     </main>

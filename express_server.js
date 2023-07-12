@@ -12,12 +12,18 @@ app.use(cookieParser());
 
 
 const urlDatabase = {
-  b2xVn2: 'http://www.lighthouselabs.ca',
-  '9sm5xK': 'http://www.google.com'
+  b6UTxQ: {
+    longURL: 'https://www.tsn.ca',
+    userID: 'aJ48lW',
+  },
+  i3BoGr: {
+    longURL: 'https://www.google.ca',
+    userID: 'aJ48lW',
+  },
 };
 
 const users = {
-  userRandomID: {
+  aJ48lW: {
     id: 'userRandomID',
     email: 'user@example.com',
     password: 'purple-monkey-dinosaur',
@@ -114,24 +120,24 @@ app.post('/register', (req, res) => {
  */
 
 app.get('/urls/new', (req, res) => {
-  const userId = req.cookies['user_id'];
-  if (!userId) {
+  const userID = req.cookies['user_id'];
+  if (!userID) {
     return res.redirect('/login');
   }
-  const templateVars = { user: users[userId] };
+  const templateVars = { user: users[userID] };
   return res.render('urls_new', templateVars);
 });
 
 app.post('/urls', (req, res) => {
-  const userId = req.cookies['user_id'];
-  if (!userId) {
+  const userID = req.cookies['user_id'];
+  if (!userID) {
     return res.send('UNAUTHORIZED: You must have a registered account and be logged in in order to use TinyURL.\n\n');
   }
 
   const { longURL } = req.body;
   const id = generateRandomString(6);
-  urlDatabase[id] = longURL;
-  const user = users[userId];
+  urlDatabase[id] = { longURL, userID };
+  const user = users[userID];
   const templateVars = { user, id, longURL };
   return res.render('urls_show', templateVars);
 });
@@ -141,7 +147,19 @@ app.post('/urls', (req, res) => {
  */
 
 app.post('/urls/:id/delete', (req, res) => {
+  const userID = req.cookies['user_id'];
+  if (!userID) {
+    const message = 'Log in to your account to use TinyURL';
+    return res.render('unauthorized', { message, user: null });
+  }
+
+  const user = users[userID];
   const { id } = req.params;
+  if (urlDatabase[id].userID !== userID) {
+    const message = `The TinyURL ${id} is not registered to this account`;
+    return res.render('unauthorized', { message, user });
+  }
+
   delete urlDatabase[id];
   return res.redirect('/urls');
 });
@@ -151,9 +169,21 @@ app.post('/urls/:id/delete', (req, res) => {
  */
 
 app.post('/urls/:id', (req, res) => {
+  const userID = req.cookies['user_id'];
+  if (!userID) {
+    const message = 'Log in to your account to use TinyURL';
+    return res.render('unauthorized', { message, user: null });
+  }
+
+  const user = users[userID];
   const { id } = req.params;
+  if (urlDatabase[id].userID !== userID) {
+    const message = `The TinyURL ${id} is not registered to this account`;
+    return res.render('unauthorized', { message, user });
+  }
+
   const { longURL } = req.body;
-  urlDatabase[id] = longURL;
+  urlDatabase[id].longURL = longURL;
   return res.redirect('/urls');
 });
 
@@ -162,9 +192,19 @@ app.post('/urls/:id', (req, res) => {
  */
 
 app.get('/urls/:id', (req, res) => {
+  const userID = req.cookies['user_id'];
+  if (!userID) {
+    const message = 'Log in to your account to use TinyURL';
+    return res.render('unauthorized', { message, user: null });
+  }
+
+  const user = users[userID];
   const { id } = req.params;
-  const longURL = urlDatabase[id];
-  const user = users[req.cookies['user_id']];
+  if (urlDatabase[id].userID !== userID) { //ERROR HERE
+    const message = `The TinyURL ${id} is not registered to this account`;
+    return res.render('unauthorized', { message, user });
+  }
+  const { longURL } = urlDatabase[id];
   const templateVars = { user, id, longURL };
   return res.render('urls_show', templateVars);
 });
@@ -174,8 +214,12 @@ app.get('/urls/:id', (req, res) => {
  */
 
 app.get('/urls', (req, res) => {
-  const id = req.cookies['user_id'];
-  const templateVars = { user: users[id], urls: urlDatabase };
+  const userID = req.cookies['user_id'];
+  if (!userID) {
+    const message = 'Log in to your account to use TinyURL';
+    return res.render('unauthorized', { message, user: null });
+  }
+  const templateVars = { user: users[userID], urls: urlsForUser(userID) };
   return res.render('urls_index', templateVars);
 });
 
@@ -185,7 +229,7 @@ app.get('/urls', (req, res) => {
 
 app.get('/u/:id', (req, res) => {
   const { id } = req.params;
-  const longURL = urlDatabase[id];
+  const { longURL } = urlDatabase[id];
   if (!longURL) {
     return res.send(`LINK NOT FOUND: An address corresponding to TinyURL ${id} doesn't exist in our records.\n\n`);
   }
@@ -213,5 +257,15 @@ const getUser = (email) => {
     if (user.email === email) return user;
   }
   return null;
+};
+
+const urlsForUser = (userID) => {
+  const urls = {};
+  Object.keys(urlDatabase).forEach((key) => {
+    if (urlDatabase[key].userID === userID) {
+      urls[key] = urlDatabase[key];
+    }
+  });
+  return urls;
 };
 

@@ -26,13 +26,13 @@
           </tr>
         </thead>
         <tbody>
-          <% for (const id in urls) { %>
+          <% for (const id of Object.keys(urls)) { %>
             <tr>
               <td>
                 <%= id %>
               </td>
               <td>
-                <%= urls[id] %>
+                <%= urls[id].longURL %>
               </td>
               <td>
                 <form method="GET" action="/urls/<%= id %>">
