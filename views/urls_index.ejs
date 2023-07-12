@@ -32,7 +32,9 @@
                 <%= id %>
               </td>
               <td>
-                <%= urls[id].longURL %>
+                <a href="<%= urls[id].longURL %>" target="_blank">
+                  <%= urls[id].longURL %>
+                </a>
               </td>
               <td>
                 <form method="GET" action="/urls/<%= id %>">
