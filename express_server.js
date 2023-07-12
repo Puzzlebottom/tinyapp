@@ -10,6 +10,10 @@ const app = express();
 const urlDatabase = {};
 const users = {};
 
+/**
+ * SERVER SETUP
+ */
+
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieSession({
@@ -234,6 +238,10 @@ app.get('/u/:id', (req, res) => {
   }
   return res.redirect(longURL);
 });
+
+/**
+ * RUN SERVER
+ */
 
 
 app.listen(PORT, () => {
