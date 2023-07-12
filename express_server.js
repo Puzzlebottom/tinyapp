@@ -1,4 +1,6 @@
+/* eslint-disable space-before-function-paren */
 /* eslint-disable camelcase */
+const argon2 = require('argon2');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const ALPHANUMERIC_CHARS = require('./constants');
@@ -60,14 +62,30 @@ app.get('/login', (req, res) => {
   return res.render('login', templateVars);
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   const user = getUser(email);
-  if (user && user.password === password) {
-    res.cookie('user_id', user.id);
-    return res.redirect('/urls');
+  if (user) {
+    await argon2.verify(user['password'], password)
+      .then((isValidPassword) => {
+        if (user && isValidPassword) {
+          res.cookie('user_id', user.id);
+          return res.redirect('/urls');
+        }
+        const message = '401 Error: Invalid Password';
+        res.status(401);
+        return res.render('unauthorized', { message, user: null });
+      })
+      .catch(() => {
+        const message = '500 Error: Something went wrong and we were unable to verify your password';
+        res.status(500);
+        return res.render('unauthorized', { message, user: null });
+      });
+  } else {
+    const message = `401 Error: No account found for ${email}`;
+    res.status(401);
+    return res.render('unauthorized', { message, user });
   }
-  return res.status(403).end();
 });
 
 app.post('/logout', (req, res) => {
@@ -89,30 +107,50 @@ app.get('/register', (req, res) => {
   return res.render('register', templateVars);
 });
 
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
   const { email, password } = req.body;
-  const user = getUser(email);
 
   if (!email || !password) {
-    res.statusMessage = 'email and password fields cannot be blank';
-    return res.status(400).end();
+    const message = '400 Error: The email and password fields cannot be blank';
+    res.status(400);
+    return res.render('unauthorized', { message, user });
   }
 
-  if (user && user.password !== password) {
-    res.statusMessage = 'a user with that email has already been registered';
-    return res.status(400).end();
+  const user = getUser(email);
+
+  if (user) {
+    await argon2.verify(user['password'], password)
+      .then(async (isValidPassword) => {
+        if (user && !isValidPassword) {
+          const message = `403 Error: An account for ${email} already exists`;
+          res.status(403);
+          return res.render('unauthorized', { message, user });
+        }
+
+        if (user && isValidPassword) {
+          res.cookie('user_id', user.id);
+          return res.redirect('/urls');
+        }
+      })
+      .catch(() => {
+        const message = '500 Error: Something went wrong and we were unable to create an account';
+        res.status(500);
+        return res.render('unauthorized', { message, user });
+      });
+  } else {
+    await argon2.hash(password)
+      .then((hash) => {
+        const id = generateRandomString(6);
+        users[id] = { id, email, password: hash };
+        res.cookie('user_id', id);
+        return res.redirect('/urls');
+      })
+      .catch(() => {
+        const message = '500 Error: Something went wrong and we were unable to create an account';
+        res.status(500);
+        return res.render('unauthorized', { message, user });
+      });
   }
-
-  if (user && user.password === password) {
-    res.cookie('user_id', user.id);
-    return res.redirect('/urls');
-  }
-
-  const id = generateRandomString(6);
-  users[id] = { id, email, password };
-  res.cookie('user_id', id);
-
-  return res.redirect('/urls');
 });
 
 /**
@@ -200,7 +238,7 @@ app.get('/urls/:id', (req, res) => {
 
   const user = users[userID];
   const { id } = req.params;
-  if (urlDatabase[id].userID !== userID) { //ERROR HERE
+  if (urlDatabase[id].userID !== userID) {
     const message = `The TinyURL ${id} is not registered to this account`;
     return res.render('unauthorized', { message, user });
   }
