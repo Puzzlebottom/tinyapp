@@ -4,7 +4,7 @@ const argon2 = require('argon2');
 const express = require('express');
 const cookieSession = require('cookie-session');
 const { SESSION_COOKIE_KEYS, PORT } = require('./constants');
-const { generateRandomString, getUserByEmail, urlsForUser } = require('./helpers');
+const { generateRandomString, getUserByEmail, renderUnauthorized, urlsForUser } = require('./helpers');
 
 const app = express();
 const urlDatabase = {};
@@ -54,19 +54,13 @@ app.post('/login', async (req, res) => {
           req.session.user_id = user.id;
           return res.redirect('/urls');
         }
-        const message = '401 Error: Invalid Password';
-        res.status(401);
-        return res.render('unauthorized', { message, user: null });
+        return renderUnauthorized('401 Error: Invalid Password', res, null, 401);
       })
       .catch(() => {
-        const message = '500 Error: Something went wrong and we were unable to verify your password';
-        res.status(500);
-        return res.render('unauthorized', { message, user: null });
+        return renderUnauthorized('500 Error: Something went wrong and we were unable to verify your password', res, null, 500);
       });
   } else {
-    const message = `401 Error: No account found for ${email}`;
-    res.status(401);
-    return res.render('unauthorized', { message, user });
+    return renderUnauthorized(`401 Error: No account found for ${email}`, res, null, 401);
   }
 });
 
@@ -93,9 +87,7 @@ app.post('/register', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    const message = '400 Error: The email and password fields cannot be blank';
-    res.status(400);
-    return res.render('unauthorized', { message, user });
+    return renderUnauthorized('400 Error: The email and password fields cannot be blank', res, null, 400);
   }
 
   const user = getUserByEmail(users, email);
@@ -104,9 +96,7 @@ app.post('/register', async (req, res) => {
     await argon2.verify(user['password'], password)
       .then(async (isValidPassword) => {
         if (user && !isValidPassword) {
-          const message = `403 Error: An account for ${email} already exists`;
-          res.status(403);
-          return res.render('unauthorized', { message, user });
+          return renderUnauthorized(`403 Error: An account for ${email} already exists`, res, user, 403);
         }
 
         if (user && isValidPassword) {
@@ -115,9 +105,7 @@ app.post('/register', async (req, res) => {
         }
       })
       .catch(() => {
-        const message = '500 Error: Something went wrong and we were unable to create an account';
-        res.status(500);
-        return res.render('unauthorized', { message, user });
+        return renderUnauthorized('500 Error: Something went wrong and we were unable to create an account', res, user, 500);
       });
   } else {
     await argon2.hash(password)
@@ -128,9 +116,7 @@ app.post('/register', async (req, res) => {
         return res.redirect('/urls');
       })
       .catch(() => {
-        const message = '500 Error: Something went wrong and we were unable to create an account';
-        res.status(500);
-        return res.render('unauthorized', { message, user });
+        return renderUnauthorized('500 Error: Something went wrong and we were unable to create an account', res, null, 500);
       });
   }
 });
@@ -169,15 +155,13 @@ app.post('/urls', (req, res) => {
 app.post('/urls/:id/delete', (req, res) => {
   const userID = req.session['user_id'];
   if (!userID) {
-    const message = 'Log in to your account to use TinyURL';
-    return res.render('unauthorized', { message, user: null });
+    return renderUnauthorized('Log in to your account to use TinyURL', res);
   }
 
   const user = users[userID];
   const { id } = req.params;
   if (urlDatabase[id].userID !== userID) {
-    const message = `The TinyURL ${id} is not registered to this account`;
-    return res.render('unauthorized', { message, user });
+    return renderUnauthorized(`The TinyURL ${id} is not registered to this account`, res, user);
   }
 
   delete urlDatabase[id];
@@ -191,15 +175,13 @@ app.post('/urls/:id/delete', (req, res) => {
 app.post('/urls/:id', (req, res) => {
   const userID = req.session['user_id'];
   if (!userID) {
-    const message = 'Log in to your account to use TinyURL';
-    return res.render('unauthorized', { message, user: null });
+    return renderUnauthorized('Log in to your account to use TinyURL', res);
   }
 
   const user = users[userID];
   const { id } = req.params;
   if (urlDatabase[id].userID !== userID) {
-    const message = `The TinyURL ${id} is not registered to this account`;
-    return res.render('unauthorized', { message, user });
+    return renderUnauthorized(`The TinyURL ${id} is not registered to this account`, res, user);
   }
 
   const { longURL } = req.body;
@@ -214,15 +196,13 @@ app.post('/urls/:id', (req, res) => {
 app.get('/urls/:id', (req, res) => {
   const userID = req.session['user_id'];
   if (!userID) {
-    const message = 'Log in to your account to use TinyURL';
-    return res.render('unauthorized', { message, user: null });
+    return renderUnauthorized('Log in to your account to use TinyURL', res);
   }
 
   const user = users[userID];
   const { id } = req.params;
   if (urlDatabase[id].userID !== userID) {
-    const message = `The TinyURL ${id} is not registered to this account`;
-    return res.render('unauthorized', { message, user });
+    return renderUnauthorized(`The TinyURL ${id} is not registered to this account`, res, user);
   }
   const { longURL } = urlDatabase[id];
   const templateVars = { user, id, longURL };
@@ -236,8 +216,7 @@ app.get('/urls/:id', (req, res) => {
 app.get('/urls', (req, res) => {
   const userID = req.session['user_id'];
   if (!userID) {
-    const message = 'Log in to your account to use TinyURL';
-    return res.render('unauthorized', { message, user: null });
+    return renderUnauthorized('Log in to your account to use TinyURL', res);
   }
   const templateVars = { user: users[userID], urls: urlsForUser(urlDatabase, userID) };
   return res.render('urls_index', templateVars);

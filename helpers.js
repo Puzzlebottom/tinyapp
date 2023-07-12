@@ -18,6 +18,11 @@ const getUserByEmail = (users, email) => {
   return null;
 };
 
+const renderUnauthorized = (message, resObject, user = null, statusCode) => {
+  if (statusCode) resObject.status(statusCode);
+  return resObject.render('unauthorized', { message, user });
+};
+
 const urlsForUser = (urlDatabase, userID) => {
   const urls = {};
   Object.keys(urlDatabase).forEach((key) => {
@@ -28,4 +33,4 @@ const urlsForUser = (urlDatabase, userID) => {
   return urls;
 };
 
-module.exports = { generateRandomString, getUserByEmail, urlsForUser };
+module.exports = { generateRandomString, getUserByEmail, renderUnauthorized, urlsForUser };
