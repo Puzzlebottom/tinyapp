@@ -3,7 +3,7 @@
 const argon2 = require('argon2');
 const express = require('express');
 const cookieSession = require('cookie-session');
-const { SESSION_COOKIE_KEYS, PORT } = require('./constants');
+const { ERROR_MSG, SESSION_COOKIE_KEYS, PORT } = require('./constants');
 const { generateRandomString, getUserByEmail, renderUnauthorized, urlsForUser } = require('./helpers');
 
 const app = express();
@@ -21,7 +21,6 @@ app.use(cookieSession({
   keys: SESSION_COOKIE_KEYS,
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
-
 
 /**
  * INDEX
@@ -58,13 +57,13 @@ app.post('/login', async (req, res) => {
           req.session.user_id = user.id;
           return res.redirect('/urls');
         }
-        return renderUnauthorized('401 Error: Invalid Password', res, null, 401);
+        return renderUnauthorized(ERROR_MSG.badPassword(), res, null, 401);
       })
       .catch(() => {
-        return renderUnauthorized('500 Error: Something went wrong and we were unable to verify your password', res, null, 500);
+        return renderUnauthorized(ERROR_MSG.validationFail(), res, null, 500);
       });
   } else {
-    return renderUnauthorized(`401 Error: No account found for ${email}`, res, null, 401);
+    return renderUnauthorized(ERROR_MSG.noAccount(email), res, null, 401);
   }
 });
 
@@ -91,7 +90,7 @@ app.post('/register', async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return renderUnauthorized('400 Error: The email and password fields cannot be blank', res, null, 400);
+    return renderUnauthorized(ERROR_MSG.blankForm(), res, null, 400);
   }
 
   const user = getUserByEmail(users, email);
@@ -100,7 +99,7 @@ app.post('/register', async (req, res) => {
     await argon2.verify(user['password'], password)
       .then(async (isValidPassword) => {
         if (user && !isValidPassword) {
-          return renderUnauthorized(`403 Error: An account for ${email} already exists`, res, user, 403);
+          return renderUnauthorized(ERROR_MSG.accountExists(email), res, user, 403);
         }
 
         if (user && isValidPassword) {
@@ -109,7 +108,7 @@ app.post('/register', async (req, res) => {
         }
       })
       .catch(() => {
-        return renderUnauthorized('500 Error: Something went wrong and we were unable to create an account', res, user, 500);
+        return renderUnauthorized(ERROR_MSG.validationFail(), res, user, 500);
       });
   } else {
     await argon2.hash(password)
@@ -120,7 +119,7 @@ app.post('/register', async (req, res) => {
         return res.redirect('/urls');
       })
       .catch(() => {
-        return renderUnauthorized('500 Error: Something went wrong and we were unable to create an account', res, null, 500);
+        return renderUnauthorized(ERROR_MSG.validationFail(), res, null, 500);
       });
   }
 });
@@ -159,13 +158,13 @@ app.post('/urls', (req, res) => {
 app.post('/urls/:id/delete', (req, res) => {
   const userID = req.session['user_id'];
   if (!userID) {
-    return renderUnauthorized('Log in to your account to use TinyURL', res);
+    return renderUnauthorized(ERROR_MSG.notLoggedIn, res);
   }
 
   const user = users[userID];
   const { id } = req.params;
   if (urlDatabase[id].userID !== userID) {
-    return renderUnauthorized(`The TinyURL ${id} is not registered to this account`, res, user);
+    return renderUnauthorized(ERROR_MSG.notOwned(id), res, user);
   }
 
   delete urlDatabase[id];
@@ -179,13 +178,13 @@ app.post('/urls/:id/delete', (req, res) => {
 app.post('/urls/:id', (req, res) => {
   const userID = req.session['user_id'];
   if (!userID) {
-    return renderUnauthorized('Log in to your account to use TinyURL', res);
+    return renderUnauthorized(ERROR_MSG.notLoggedIn(), res);
   }
 
   const user = users[userID];
   const { id } = req.params;
   if (urlDatabase[id].userID !== userID) {
-    return renderUnauthorized(`The TinyURL ${id} is not registered to this account`, res, user);
+    return renderUnauthorized(ERROR_MSG.notOwned(id), res, user);
   }
 
   const { longURL } = req.body;
@@ -200,13 +199,13 @@ app.post('/urls/:id', (req, res) => {
 app.get('/urls/:id', (req, res) => {
   const userID = req.session['user_id'];
   if (!userID) {
-    return renderUnauthorized('Log in to your account to use TinyURL', res);
+    return renderUnauthorized(ERROR_MSG.notLoggedIn(), res);
   }
 
   const user = users[userID];
   const { id } = req.params;
   if (urlDatabase[id].userID !== userID) {
-    return renderUnauthorized(`The TinyURL ${id} is not registered to this account`, res, user);
+    return renderUnauthorized(ERROR_MSG.notOwned(id), res, user);
   }
   const { longURL } = urlDatabase[id];
   const templateVars = { user, id, longURL };
@@ -220,7 +219,7 @@ app.get('/urls/:id', (req, res) => {
 app.get('/urls', (req, res) => {
   const userID = req.session['user_id'];
   if (!userID) {
-    return renderUnauthorized('Log in to your account to use TinyURL', res);
+    return renderUnauthorized(ERROR_MSG.notLoggedIn(), res);
   }
   const templateVars = { user: users[userID], urls: urlsForUser(urlDatabase, userID) };
   return res.render('urls_index', templateVars);
@@ -242,7 +241,6 @@ app.get('/u/:id', (req, res) => {
 /**
  * RUN SERVER
  */
-
 
 app.listen(PORT, () => {
   console.log(`TinyApp server listening on port ${PORT}!`);
