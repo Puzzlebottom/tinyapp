@@ -246,7 +246,7 @@ app.get('/u/:id', (req, res) => {
   if (!longURL) {
     return res.send(`LINK NOT FOUND: An address corresponding to TinyURL ${id} doesn't exist in our records.\n\n`);
   }
-  logVisit(id, urlDatabase, visitor_id);
+  logVisit(urlDatabase, id, visitor_id);
 
   return res.redirect(longURL);
 });

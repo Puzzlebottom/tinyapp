@@ -48,15 +48,19 @@ const urlsForUser = function(urlDatabase, userDatabase, userID) {
   return urls;
 };
 
-const logVisit = function(urlID, urlDatabase, visitorID) {
+const logVisit = function(urlDatabase, urlID, visitorID) {
+  if (arguments.length > 3) throw new Error('Error: too many arguments');
+  if (arguments.length < 3) throw new Error('Error: not enough arguments');
+  if (typeof urlDatabase !== 'object' || typeof urlID !== 'string' || typeof visitorID !== 'string') throw new Error('Error: invalid argument type');
+
   const url = urlDatabase[urlID];
   const { visits } = url;
   visits.total = visits.total += 1;
-  if (!visits.vistors.includes(visitorID)) {
+  if (!visits.visitors.includes(visitorID)) {
     visits.visitors.push(visitorID);
     visits.unique = visits.unique += 1;
   }
-  visits.logs.push({ visitorID, timeStamp: new timeStamp() });
+  visits.logs.push({ visitorID, timeStamp: timeStamp() });
 };
 
 module.exports = { generateRandomString, getUserByEmail, logVisit, renderUnauthorized, urlsForUser };
