@@ -3,7 +3,7 @@
 const argon2 = require('argon2');
 const express = require('express');
 const cookieSession = require('cookie-session');
-const { PORT } = require('./constants');
+const { SESSION_COOKIE_KEYS, PORT } = require('./constants');
 const { generateRandomString, getUserByEmail, urlsForUser } = require('./helpers');
 
 const app = express();
@@ -14,7 +14,7 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieSession({
   name: 'session',
-  keys: ['abecedarian', 'brodingnagian', 'cassandraic', 'defenestration', 'equanimious', 'flimflammery'],
+  keys: SESSION_COOKIE_KEYS,
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
 
