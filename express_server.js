@@ -3,10 +3,12 @@
 const argon2 = require('argon2');
 const express = require('express');
 const cookieSession = require('cookie-session');
-const ALPHANUMERIC_CHARS = require('./constants');
-const PORT = 8080; // default port 8080
+const { PORT } = require('./constants');
+const { generateRandomString, getUserByEmail, urlsForUser } = require('./helpers');
 
 const app = express();
+const urlDatabase = {};
+const users = {};
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
@@ -16,30 +18,6 @@ app.use(cookieSession({
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
 
-
-const urlDatabase = {
-  b6UTxQ: {
-    longURL: 'https://www.tsn.ca',
-    userID: 'aJ48lW',
-  },
-  i3BoGr: {
-    longURL: 'https://www.google.ca',
-    userID: 'aJ48lW',
-  },
-};
-
-const users = {
-  aJ48lW: {
-    id: 'userRandomID',
-    email: 'user@example.com',
-    password: 'purple-monkey-dinosaur',
-  },
-  user2RandomID: {
-    id: 'user2RandomID',
-    email: 'user2@example.com',
-    password: 'dishwasher-funk',
-  },
-};
 
 /**
  * INDEX
@@ -144,7 +122,7 @@ app.post('/register', async (req, res) => {
   } else {
     await argon2.hash(password)
       .then((hash) => {
-        const id = generateRandomString(6);
+        const id = generateRandomString(urlDatabase, 6);
         users[id] = { id, email, password: hash };
         req.session.user_id = id;
         return res.redirect('/urls');
@@ -177,7 +155,7 @@ app.post('/urls', (req, res) => {
   }
 
   const { longURL } = req.body;
-  const id = generateRandomString(6);
+  const id = generateRandomString(urlDatabase, 6);
   urlDatabase[id] = { longURL, userID };
   const user = users[userID];
   const templateVars = { user, id, longURL };
@@ -282,32 +260,4 @@ app.get('/u/:id', (req, res) => {
 app.listen(PORT, () => {
   console.log(`TinyApp server listening on port ${PORT}!`);
 });
-
-const generateRandomString = (stringLength) => {
-  const totalNumberOfChars = ALPHANUMERIC_CHARS.length;
-  let randomString = '';
-  for (let i = 1; i <= stringLength; i++) {
-    const randomIndex = Math.floor(Math.random() * totalNumberOfChars);
-    randomString += ALPHANUMERIC_CHARS[randomIndex];
-  }
-  const alreadyExists = Object.keys(urlDatabase).includes(randomString);
-  return alreadyExists ? generateRandomString(stringLength) : randomString;
-};
-
-const getUserByEmail = (users, email) => {
-  for (const user of Object.values(users)) {
-    if (user.email === email) return user;
-  }
-  return null;
-};
-
-const urlsForUser = (urlDatabase, userID) => {
-  const urls = {};
-  Object.keys(urlDatabase).forEach((key) => {
-    if (urlDatabase[key].userID === userID) {
-      urls[key] = urlDatabase[key];
-    }
-  });
-  return urls;
-};
 

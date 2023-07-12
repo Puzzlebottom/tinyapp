@@ -3,5 +3,6 @@ const upperCase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const lowerCase = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
 const ALPHANUMERIC_CHARS = [...numerics, ...upperCase, ...lowerCase];
+const PORT = 8080; // default port 8080
 
-module.exports = ALPHANUMERIC_CHARS;
+module.exports = { ALPHANUMERIC_CHARS, PORT };
