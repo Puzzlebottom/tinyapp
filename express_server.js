@@ -1,6 +1,6 @@
 /* eslint-disable space-before-function-paren */
 /* eslint-disable camelcase */
-const { ALPHANUMERIC_CHARS, ERROR_MSG, SESSION_COOKIE_KEYS, PORT } = require('./constants');
+const { ERROR_MSG, SESSION_COOKIE_KEYS, PORT } = require('./constants');
 
 const argon2 = require('argon2');
 const cookieSession = require('cookie-session');
@@ -158,7 +158,7 @@ app.post('/urls', (req, res) => {
  * DELETE URL
  */
 
-app.post('/urls/:id/delete', (req, res) => {
+app.delete('/urls/:id', (req, res) => {
   const userID = req.session['user_id'];
   if (!userID) {
     return renderUnauthorized(ERROR_MSG.notLoggedIn, res);
@@ -178,7 +178,7 @@ app.post('/urls/:id/delete', (req, res) => {
  * UPDATE URL
  */
 
-app.post('/urls/:id', (req, res) => {
+app.put('/urls/:id', (req, res) => {
   const userID = req.session['user_id'];
   if (!userID) {
     return renderUnauthorized(ERROR_MSG.notLoggedIn(), res);
