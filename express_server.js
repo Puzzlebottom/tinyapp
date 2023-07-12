@@ -68,7 +68,7 @@ app.get('/login', (req, res) => {
 
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
-  const user = getUser(email);
+  const user = getUserByEmail(users, email);
   if (user) {
     await argon2.verify(user['password'], password)
       .then((isValidPassword) => {
@@ -120,7 +120,7 @@ app.post('/register', async (req, res) => {
     return res.render('unauthorized', { message, user });
   }
 
-  const user = getUser(email);
+  const user = getUserByEmail(users, email);
 
   if (user) {
     await argon2.verify(user['password'], password)
@@ -261,7 +261,7 @@ app.get('/urls', (req, res) => {
     const message = 'Log in to your account to use TinyURL';
     return res.render('unauthorized', { message, user: null });
   }
-  const templateVars = { user: users[userID], urls: urlsForUser(userID) };
+  const templateVars = { user: users[userID], urls: urlsForUser(urlDatabase, userID) };
   return res.render('urls_index', templateVars);
 });
 
@@ -294,14 +294,14 @@ const generateRandomString = (stringLength) => {
   return alreadyExists ? generateRandomString(stringLength) : randomString;
 };
 
-const getUser = (email) => {
+const getUserByEmail = (users, email) => {
   for (const user of Object.values(users)) {
     if (user.email === email) return user;
   }
   return null;
 };
 
-const urlsForUser = (userID) => {
+const urlsForUser = (urlDatabase, userID) => {
   const urls = {};
   Object.keys(urlDatabase).forEach((key) => {
     if (urlDatabase[key].userID === userID) {
