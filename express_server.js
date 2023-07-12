@@ -11,6 +11,7 @@ const methodOverride = require('method-override');
 const app = express();
 const urlDatabase = {};
 const users = {};
+const visitorDatabase = {};
 
 /**
  * SERVER SETUP
@@ -151,7 +152,7 @@ app.post('/urls', (req, res) => {
   const visits = { total: 0, unique: 0, visitors: [], logs: [] };
   urlDatabase[id] = { longURL, userID, visits };
   const user = users[userID];
-  const templateVars = { user, id, longURL }; //throw more data in hurr
+  const templateVars = { user, id, longURL, visits }; //throw more data in hurr
   return res.render('urls_show', templateVars);
 });
 
@@ -211,8 +212,8 @@ app.get('/urls/:id', (req, res) => {
   if (urlDatabase[id].userID !== userID) {
     return renderUnauthorized(ERROR_MSG.notOwned(id), res, user);
   }
-  const { longURL } = urlDatabase[id];
-  const templateVars = { user, id, longURL };
+  const { longURL, visits } = urlDatabase[id];
+  const templateVars = { user, id, longURL, visits };
   return res.render('urls_show', templateVars);
 });
 
@@ -237,8 +238,8 @@ app.get('/u/:id', (req, res) => {
   let { visitor_id } = req.session;
 
   if (!visitor_id) {
-    visitor_id = generateRandomString(6);
-    res.session.visitor_id = visitor_id;
+    visitor_id = generateRandomString(visitorDatabase, 6);
+    req.session.visitor_id = visitor_id;
   }
 
   const { id } = req.params;
