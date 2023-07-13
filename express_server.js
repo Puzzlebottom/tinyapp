@@ -7,6 +7,7 @@ const cookieSession = require('cookie-session');
 const express = require('express');
 const { generateRandomString, getUserByEmail, logVisit, renderUnauthorized, urlsForUser } = require('./helpers');
 const methodOverride = require('method-override');
+const morgan = require('morgan');
 
 const app = express();
 const urlDatabase = {};
@@ -20,6 +21,7 @@ const visitorDatabase = {};
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
+app.use(morgan('tiny'));
 app.use(cookieSession({
   name: 'session',
   keys: SESSION_COOKIE_KEYS,
