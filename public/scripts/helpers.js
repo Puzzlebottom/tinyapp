@@ -15,7 +15,7 @@ const { ALPHANUMERIC_CHARS, EMAIL_VALIDATION_REGEX, ERROR_MSG } = require('./con
  */
 
 const checkAuthorization = async function(user, password, cookie, response) {
-  await argon2.verify(user.password, password) // https://github.com/Puzzlebottom/tinyapp/tree/feature/bcrypt for bcrypt version
+  await argon2.verify(user.password, password) // https://github.com/Puzzlebottom/tinyapp/tree/feature/bcrypt-update for bcrypt version
     .then((isValidPassword) => {
       if (isValidPassword) { // if we've got an account and your password is valid
         user.giveCookie(cookie); // you get a cookie
