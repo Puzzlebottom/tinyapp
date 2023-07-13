@@ -1,6 +1,6 @@
 const { assert } = require('chai');
-const { generateRandomString } = require('../helpers.js');
-const { ALPHANUMERIC_CHARS } = require('../constants.js');
+const { generateRandomString } = require('../public/scripts/helpers.js');
+const { ALPHANUMERIC_CHARS } = require('../public/scripts/constants.js');
 
 
 const testIDs = {

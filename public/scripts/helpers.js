@@ -1,14 +1,45 @@
-const { ALPHANUMERIC_CHARS, EMAIL_VALIDATION_REGEX } = require('./constants');
+const argon2 = require('argon2');
+const { User } = require('../scripts/entities/user');
+
+const { ALPHANUMERIC_CHARS, EMAIL_VALIDATION_REGEX, ERROR_MSG } = require('./constants');
+
+const checkAuthorization = async function(user, password, cookie, response) {
+  await argon2.verify(user.password, password) // https://github.com/Puzzlebottom/tinyapp/tree/feature/bcrypt for bcrypt version
+    .then((isValidPassword) => {
+      if (isValidPassword) { // if we've got an account and your password is valid
+        user.giveCookie(cookie); // you get a cookie
+        return response.redirect('/urls'); // have fun
+      }
+      return renderUnauthorized(ERROR_MSG.badPassword(), response, null, 401); // your password doesn't check out
+    })
+    .catch(() => {
+      return renderUnauthorized(ERROR_MSG.validationFail(), response, null, 500); // argon2 is broken
+    });
+};
+
+const checkPermissions = (user, url, response) => {
+  if (url.userID !== user.id) {
+    return renderUnauthorized(ERROR_MSG.notOwned(url.id), response, user); // put the bunny back in the box
+  }
+};
+
+const enterWithValidCookie = (cookie, response) => {
+  if (cookie.user_id) return response.redirect('/urls'); // pass with a valid cookie
+};
+
+const exitWithNoValidCookie = (cookie, response) => {
+  if (!cookie['user_id']) return renderUnauthorized(ERROR_MSG.notLoggedIn(), response);
+};
 
 /**
  * generateRandomString() is now used only to create tinyURLs.
  * uuidv4 is used to create userIDs and visitorIDs.
- *
- * It takes as arguments database: object (whose keys are used for
- * comparison to guarantee no duplicates) and a stringLength: number
- * which controls the length of generated string. Valid characters
- * are imported as an array in ALPHANUMERIC_CHARS.
- */
+*
+* It takes as arguments database: object (whose keys are used for
+  * comparison to guarantee no duplicates) and a stringLength: number
+  * which controls the length of generated string. Valid characters
+  * are imported as an array in ALPHANUMERIC_CHARS.
+  */
 
 const generateRandomString = function(database, stringLength) {
   if (arguments.length > 2) throw new Error('Error: too many arguments');
@@ -29,10 +60,10 @@ const generateRandomString = function(database, stringLength) {
 /**
  * getUserByEmail() returns a user: object whose email property
  * matches the provided email: string.
- *
- * Validation of email format is supplemental to that provided by
- * the html input type="email".
- */
+*
+* Validation of email format is supplemental to that provided by
+* the html input type="email".
+*/
 
 const getUserByEmail = function(users, email) {
   if (arguments.length > 2) throw new Error('Error: too many arguments');
@@ -43,6 +74,19 @@ const getUserByEmail = function(users, email) {
   for (const user of Object.values(users)) {
     if (user.email === email) return user;
   }
+};
+
+const registerUser = async function(userDatabase, email, password, cookie, response) {
+  await argon2.hash(password) // hash it real good!
+    .then((hashedPassword) => {
+      const user = new User(email, hashedPassword);
+      userDatabase[user.id] = user;
+      user.giveCookie(cookie); // you get a cookie
+      return response.redirect('/urls'); // welcome
+    })
+    .catch(() => {
+      return renderUnauthorized(ERROR_MSG.validationFail(), response, null, 500); // argon2 dropped the ball
+    });
 };
 
 /**
@@ -82,29 +126,4 @@ const urlsForUser = function(urlDatabase, userDatabase, userID) {
   return urls;
 };
 
-/**
- * logVisit() is called whenever a someone (a user or otherwise) uses
- * a TinyURL link. It selects a url object from the urlDatabase: object by
- * matching its urlID: string.
- *
- * It increments the total visits and then checks whether the visitorID
- * matches any previous users of this TinyURL. New visitors have their visitorID
- * recorded along with a timestamp of the link's use.
- */
-
-const logVisit = function(urlDatabase, urlID, visitorID) {
-  if (arguments.length > 3) throw new Error('Error: too many arguments');
-  if (arguments.length < 3) throw new Error('Error: not enough arguments');
-  if (typeof urlDatabase !== 'object' || typeof urlID !== 'string' || typeof visitorID !== 'string') throw new Error('Error: invalid argument type');
-
-  const url = urlDatabase[urlID]; // get URL
-  const { visits } = url;
-  visits.total = visits.total += 1; // increment total visits
-  if (!visits.visitors.includes(visitorID)) { // check if visitor has used the link before
-    visits.visitors.push(visitorID); // store visitorID
-    visits.unique = visits.unique += 1; // increment unique visits
-  }
-  visits.logs.unshift({ visitorID, timeStamp: new Date().toGMTString() }); // add visit to log
-};
-
-module.exports = { generateRandomString, getUserByEmail, logVisit, renderUnauthorized, urlsForUser };
+module.exports = { checkAuthorization, checkPermissions, enterWithValidCookie, exitWithNoValidCookie, generateRandomString, getUserByEmail, registerUser, renderUnauthorized, urlsForUser };

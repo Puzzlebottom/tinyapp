@@ -1,5 +1,5 @@
 const { assert } = require('chai');
-const { urlsForUser } = require('../helpers.js');
+const { urlsForUser } = require('../public/scripts/helpers.js');
 
 const testUsers = {
   userRandomID: {

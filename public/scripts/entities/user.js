@@ -21,10 +21,6 @@ class User {
   giveCookie(session) {
     return session.user_id = this.id;
   }
-
-  deleteCookie(session) {
-    return session.user_id = null;
-  }
 }
 
 module.exports = { User };
