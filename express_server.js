@@ -8,6 +8,8 @@ const express = require('express');
 const { generateRandomString, getUserByEmail, logVisit, renderUnauthorized, urlsForUser } = require('./helpers');
 const methodOverride = require('method-override');
 const morgan = require('morgan');
+const { v4: uuidv4 } = require('uuid');
+
 
 const app = express();
 const urlDatabase = {};
@@ -119,7 +121,7 @@ app.post('/register', async (req, res) => {
   } else {
     await argon2.hash(password)
       .then((hash) => {
-        const id = generateRandomString(users, 6);
+        const id = uuidv4();
         users[id] = { id, email, password: hash };
         req.session.user_id = id;
         return res.redirect('/urls');
@@ -240,7 +242,7 @@ app.get('/u/:id', (req, res) => {
   let { visitor_id } = req.session;
 
   if (!visitor_id) {
-    visitor_id = generateRandomString(visitorDatabase, 6);
+    visitor_id = uuidv4();
     req.session.visitor_id = visitor_id;
   }
 
