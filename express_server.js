@@ -1,13 +1,15 @@
 /* eslint-disable space-before-function-paren */
 /* eslint-disable camelcase */
 const { ERROR_MSG, SESSION_COOKIE_KEYS, PORT } = require('./constants');
+const { SALT_ROUNDS } = require('./constants');
 
-const argon2 = require('argon2');
+const bcrypt = require('bcrypt');
 const cookieSession = require('cookie-session');
 const express = require('express');
 const { generateRandomString, getUserByEmail, logVisit, renderUnauthorized, urlsForUser } = require('./helpers');
 const methodOverride = require('method-override');
 const morgan = require('morgan');
+
 
 const app = express();
 const urlDatabase = {};
@@ -57,7 +59,7 @@ app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   const user = getUserByEmail(users, email);
   if (user) {
-    await argon2.verify(user['password'], password)
+    await bcrypt.compare(password, user['password'])
       .then((isValidPassword) => {
         if (user && isValidPassword) {
           req.session.user_id = user.id;
@@ -102,7 +104,7 @@ app.post('/register', async (req, res) => {
   const user = getUserByEmail(users, email);
 
   if (user) {
-    await argon2.verify(user['password'], password)
+    await bcrypt.compare(password, user['password'])
       .then(async (isValidPassword) => {
         if (user && !isValidPassword) {
           return renderUnauthorized(ERROR_MSG.accountExists(email), res, user, 403);
@@ -117,7 +119,7 @@ app.post('/register', async (req, res) => {
         return renderUnauthorized(ERROR_MSG.validationFail(), res, user, 500);
       });
   } else {
-    await argon2.hash(password)
+    await bcrypt.hash(password, SALT_ROUNDS)
       .then((hash) => {
         const id = generateRandomString(users, 6);
         users[id] = { id, email, password: hash };
