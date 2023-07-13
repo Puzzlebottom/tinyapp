@@ -1,15 +1,17 @@
 /* eslint-disable space-before-function-paren */
 /* eslint-disable camelcase */
-const { ERROR_MSG, SESSION_COOKIE_KEYS, PORT } = require('./constants');
+const { ERROR_MSG, SESSION_COOKIE_KEYS, PORT } = require('./public/scripts/constants');
 
 const argon2 = require('argon2');
 const cookieSession = require('cookie-session');
 const express = require('express');
-const { generateRandomString, getUserByEmail, logVisit, renderUnauthorized, urlsForUser } = require('./helpers');
+const { generateRandomString, getUserByEmail, logVisit, renderUnauthorized, urlsForUser } = require('./public/scripts/helpers');
 const methodOverride = require('method-override');
 const morgan = require('morgan');
 const { v4: uuidv4 } = require('uuid');
 
+const { User } = require('./public/scripts/entities/user');
+const { TinyURL } = require('./public/scripts/entities/tiny_url');
 
 const app = express();
 const urlDatabase = {};
@@ -60,8 +62,8 @@ app.post('/login', async (req, res) => { // async for hash checking
   if (user) {
     await argon2.verify(user['password'], password) // https://github.com/Puzzlebottom/tinyapp/tree/feature/bcrypt for bcrypt version
       .then((isValidPassword) => {
-        if (user && isValidPassword) { // if we've got an account and your password is valid
-          req.session.user_id = user.id; // you get a cookie
+        if (isValidPassword) { // if we've got an account and your password is valid
+          user.giveCookie(req.session); // you get a cookie
           return res.redirect('/urls'); // have fun
         }
         return renderUnauthorized(ERROR_MSG.badPassword(), res, null, 401); // your password doesn't check out
@@ -69,13 +71,12 @@ app.post('/login', async (req, res) => { // async for hash checking
       .catch(() => {
         return renderUnauthorized(ERROR_MSG.validationFail(), res, null, 500); // argon2 is broken
       });
-  } else {
-    return renderUnauthorized(ERROR_MSG.noAccount(email), res, null, 401); // we don't know who you are
   }
+  return renderUnauthorized(ERROR_MSG.noAccount(email), res, null, 401); // we don't know who you are
 });
 
 app.post('/logout', (req, res) => {
-  req.session = null; // I want my cookie back
+  req.session.user_id = null; // I want my user_id cookie back. You can keep your visitor_id cookie if you've got one.
   return res.redirect('/login');
 });
 
@@ -109,27 +110,27 @@ app.post('/register', async (req, res) => { // async for hash checking
   const user = getUserByEmail(users, email); // let me pull up your account
 
   if (user) {
-    await argon2.verify(user['password'], password) // and check that your password is valid
+    await argon2.verify(user.password, password) // and check that your password is valid
       .then(async (isValidPassword) => {
-        if (user && !isValidPassword) {
-          return renderUnauthorized(ERROR_MSG.accountExists(email), res, user, 403); // Senator, you're no Jack Kennedy.
+        if (!isValidPassword) {
+          return renderUnauthorized(ERROR_MSG.accountExists(email), res, null, 403); // Senator, you're no Jack Kennedy.
         }
 
-        if (user && isValidPassword) { // everything checks out
-          req.session.user_id = user.id; // have another cookie
+        if (isValidPassword) { // everything checks out
+          user.giveCookie(req.session); // have another cookie
           return res.redirect('/urls'); // and go play
         }
       })
       .catch(() => {
-        return renderUnauthorized(ERROR_MSG.validationFail(), res, user, 500); // argon2 is broken
+        return renderUnauthorized(ERROR_MSG.validationFail(), res, null, 500); // argon2 is broken
       });
   } else {
     await argon2.hash(password) // hash it real good!
-      .then((hash) => {
-        const id = uuidv4(); // uuid for userID
-        users[id] = { id, email, password: hash };
-        req.session.user_id = id; // you get a cookie
-        return res.redirect('/urls'); // welcome.
+      .then((hashedPassword) => {
+        const user = new User(email, hashedPassword);
+        users[user.id] = user;
+        user.giveCookie(req.session); // you get a cookie
+        return res.redirect('/urls'); // welcome
       })
       .catch(() => {
         return renderUnauthorized(ERROR_MSG.validationFail(), res, null, 500); // argon2 dropped the ball
@@ -158,10 +159,10 @@ app.post('/urls', (req, res) => {
 
   const { longURL } = req.body;
   const id = generateRandomString(urlDatabase, 6);
-  const visits = { total: 0, unique: 0, visitors: [], logs: [] };
-  urlDatabase[id] = { longURL, userID, visits }; // we built a urlObject!
+  const url = new TinyURL(id, longURL, userID); // we built a urlObject!
+  urlDatabase[url.id] = url; //and stored it
   const user = users[userID];
-  const templateVars = { user, id, longURL, visits };
+  const templateVars = { user, url };
   return res.render('urls_show', templateVars); // let's take a closer look at what we made.
 });
 
@@ -172,16 +173,16 @@ app.post('/urls', (req, res) => {
 app.delete('/urls/:id', (req, res) => {
   const userID = req.session['user_id'];
   if (!userID) {
-    return renderUnauthorized(ERROR_MSG.notLoggedIn, res); // can't delete if you're notLoggedIn
+    return renderUnauthorized(ERROR_MSG.notLoggedIn(), res); // can't delete if you're notLoggedIn
   }
 
   const user = users[userID];
-  const { id } = req.params;
-  if (urlDatabase[id].userID !== userID) {
-    return renderUnauthorized(ERROR_MSG.notOwned(id), res, user); // can't touch other peoples things
+  const urlID = req.params.id;
+  if (urlDatabase[urlID].userID !== userID) {
+    return renderUnauthorized(ERROR_MSG.notOwned(urlID), res, user); // can't touch other peoples things
   }
 
-  delete urlDatabase[id]; // buh-bye urlObject!
+  delete urlDatabase[urlID]; // buh-bye urlObject!
   return res.redirect('/urls'); // back to work
 });
 
@@ -196,13 +197,13 @@ app.put('/urls/:id', (req, res) => {
   }
 
   const user = users[userID];
-  const { id } = req.params;
-  if (urlDatabase[id].userID !== userID) {
-    return renderUnauthorized(ERROR_MSG.notOwned(id), res, user); // put the bunny back in the box
+  const urlID = req.params.id;
+  if (urlDatabase[urlID].userID !== userID) {
+    return renderUnauthorized(ERROR_MSG.notOwned(urlID), res, user); // put the bunny back in the box
   }
 
-  const { longURL } = req.body; // new data
-  urlDatabase[id].longURL = longURL; // old => new
+  const newURL = req.body.longURL; // new data
+  urlDatabase[urlID].updateLongURL(newURL);
   return res.redirect('/urls'); // go and see what it is that you have wrought
 });
 
@@ -217,12 +218,13 @@ app.get('/urls/:id', (req, res) => {
   }
 
   const user = users[userID];
-  const { id } = req.params;
-  if (urlDatabase[id].userID !== userID) {
-    return renderUnauthorized(ERROR_MSG.notOwned(id), res, user); // no peeking
+  const urlID = req.params.id;
+  if (urlDatabase[urlID].userID !== userID) {
+    return renderUnauthorized(ERROR_MSG.notOwned(urlID), res, user); // no peeking
   }
-  const { longURL, visits } = urlDatabase[id]; // pull the records out of storage
-  const templateVars = { user, id, longURL, visits }; // jam them in the view
+
+  const url = urlDatabase[urlID]; // pull the records out of storage
+  const templateVars = { user, url }; // jam them in the view
   return res.render('urls_show', templateVars); // enjoy the sweet sweet analytics
 });
 
@@ -235,7 +237,9 @@ app.get('/urls', (req, res) => {
   if (!userID) {
     return renderUnauthorized(ERROR_MSG.notLoggedIn(), res); // you don't belong here
   }
-  const templateVars = { user: users[userID], urls: urlsForUser(urlDatabase, users, userID) }; // grab all of your stuff
+  const user = users[userID];
+  const urls = urlsForUser(urlDatabase, users, userID);
+  const templateVars = { user, urls }; // grab all of your stuff
   return res.render('urls_index', templateVars); // and go
 });
 
@@ -248,17 +252,17 @@ app.get('/u/:id', (req, res) => {
 
   if (!visitor_id) {
     visitor_id = uuidv4();
-    req.session.visitor_id = visitor_id;
+    req.session.visitor_id = visitor_id; // get a visitor_id cookie
   }
 
-  const { id } = req.params;
-  const { longURL } = urlDatabase[id];
-  if (!longURL) {
-    return res.send(`LINK NOT FOUND: An address corresponding to TinyURL ${id} doesn't exist in our records.\n\n`); // you mean naming a variable database doesn't actually make it a database!?
+  const urlID = req.params.id;
+  const url = urlDatabase[urlID];
+  if (!url) {
+    return res.send(`LINK NOT FOUND: An address corresponding to TinyURL ${urlID} doesn't exist in our records.\n\n`); // you mean naming a variable database doesn't actually make it a database!?
   }
-  logVisit(urlDatabase, id, visitor_id); // log those sweet analytics
+  url.logVisit(visitor_id); // log those sweet analytics
 
-  return res.redirect(longURL); // so long, and thanks for all the fish
+  return res.redirect(url.longURL); // so long, and thanks for all the fish
 });
 
 /**

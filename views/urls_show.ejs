@@ -13,17 +13,17 @@
     <div class="card text-center">
       <div class="card-header"></div>
       <div class="card-body">
-        <h5 class="card-title">TinyURL for: <%= longURL %>
+        <h5 class="card-title">TinyURL for: <%= url.longURL %>
         </h5>
         <p class="card-text">
-          Short URL ID: <a href="/u/<%= id %>" target="_blank">
-            <%= id %>
+          Short URL ID: <a href="/u/<%= url.id %>" target="_blank">
+            <%= url.id %>
           </a>
         </p>
       </div>
       <div class="card-footer text-muted">
         <h3 class="card-title m-0">Edit</h3>
-        <form class="form-inline justify-content-center" action="/urls/<%= id %>?_method=PUT" method="POST">
+        <form class="form-inline justify-content-center" action="/urls/<%= url.id %>?_method=PUT" method="POST">
           <div class="form-group mb-2">
             <label for="longURL">New URL:</label>
             <input class="form-control m-2" type="text" name="longURL" value="http://"
@@ -42,10 +42,10 @@
           </div>
           <div class="card-body">
             <div class="card-text mb-3">
-              TOTAL: <%= visits.total %>
+              TOTAL: <%= url.totalVisits %>
             </div>
             <div class="card-text mb-3">
-              UNIQUE: <%= visits.unique %>
+              UNIQUE: <%= url.uniqueVisits %>
             </div>
 
           </div>
@@ -55,7 +55,7 @@
             <h5>Logs</h5>
           </div>
           <div class="card-body" style="overflow-y: scroll;">
-            <% for (const log of visits.logs) { %>
+            <% for (const log of url.logs) { %>
               <p>
                 <%= log.timeStamp %>
               </p>
