@@ -4,7 +4,6 @@ const lowerCase = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
 const ALPHANUMERIC_CHARS = [...numerics, ...upperCase, ...lowerCase];
 const EMAIL_VALIDATION_REGEX = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/; // => RFC 2822 compliant
-const SALT_ROUNDS = 10;
 const SESSION_COOKIE_KEYS = ['abecedarian', 'brodingnagian', 'cassandraic', 'defenestration', 'equanimious', 'flimflammery'];
 const PORT = 8080; // default port 8080
 const ERROR_MSG = {
@@ -17,4 +16,4 @@ const ERROR_MSG = {
   validationFail: () => '500 Error: Something went wrong and we were unable to verify your password',
 };
 
-module.exports = { ALPHANUMERIC_CHARS, ERROR_MSG, EMAIL_VALIDATION_REGEX, SALT_ROUNDS, SESSION_COOKIE_KEYS, PORT };
+module.exports = { ALPHANUMERIC_CHARS, ERROR_MSG, EMAIL_VALIDATION_REGEX, SESSION_COOKIE_KEYS, PORT };

@@ -1,9 +1,8 @@
-const bcrypt = require('bcrypt');
+const argon2 = require('argon2');
 
 const { User } = require('../scripts/entities/user');
 
 const { ALPHANUMERIC_CHARS, EMAIL_VALIDATION_REGEX, ERROR_MSG } = require('./constants');
-const { SALT_ROUNDS } = require('./constants');
 
 /**
  * checkAuthorization() verifies the provided password: string against the
@@ -16,7 +15,7 @@ const { SALT_ROUNDS } = require('./constants');
  */
 
 const checkAuthorization = async function(user, password, cookie, response) {
-  await bcrypt.compare(password, user.password) // https://github.com/Puzzlebottom/tinyapp/tree/feature/bcrypt for bcrypt version
+  await argon2.verify(user.password, password) // https://github.com/Puzzlebottom/tinyapp/tree/feature/bcrypt for bcrypt version
     .then((isValidPassword) => {
       if (isValidPassword) { // if we've got an account and your password is valid
         user.giveCookie(cookie); // you get a cookie
@@ -117,7 +116,7 @@ const getUserByEmail = function(users, email) {
  */
 
 const registerUser = async function(userDatabase, email, password, cookie, response) {
-  await bcrypt.hash(password, SALT_ROUNDS) // hash it real good!
+  await argon2.hash(password) // hash it real good!
     .then((hashedPassword) => {
       const user = new User(email, hashedPassword);
       userDatabase[user.id] = user;
