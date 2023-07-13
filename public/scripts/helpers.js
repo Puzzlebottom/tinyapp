@@ -1,7 +1,9 @@
-const argon2 = require('argon2');
+const bcrypt = require('bcrypt');
+
 const { User } = require('../scripts/entities/user');
 
 const { ALPHANUMERIC_CHARS, EMAIL_VALIDATION_REGEX, ERROR_MSG } = require('./constants');
+const { SALT_ROUNDS } = require('./constants');
 
 /**
  * checkAuthorization() verifies the provided password: string against the
@@ -14,7 +16,7 @@ const { ALPHANUMERIC_CHARS, EMAIL_VALIDATION_REGEX, ERROR_MSG } = require('./con
  */
 
 const checkAuthorization = async function(user, password, cookie, response) {
-  await argon2.verify(user.password, password) // https://github.com/Puzzlebottom/tinyapp/tree/feature/bcrypt for bcrypt version
+  await bcrypt.compare(password, user.password) // https://github.com/Puzzlebottom/tinyapp/tree/feature/bcrypt for bcrypt version
     .then((isValidPassword) => {
       if (isValidPassword) { // if we've got an account and your password is valid
         user.giveCookie(cookie); // you get a cookie
@@ -23,7 +25,7 @@ const checkAuthorization = async function(user, password, cookie, response) {
       return renderUnauthorized(ERROR_MSG.badPassword(), response, null, 401); // your password doesn't check out
     })
     .catch(() => {
-      return renderUnauthorized(ERROR_MSG.validationFail(), response, null, 500); // argon2 is broken
+      return renderUnauthorized(ERROR_MSG.validationFail(), response, null, 500); // bcrypt is broken
     });
 };
 
@@ -115,7 +117,7 @@ const getUserByEmail = function(users, email) {
  */
 
 const registerUser = async function(userDatabase, email, password, cookie, response) {
-  await argon2.hash(password) // hash it real good!
+  await bcrypt.hash(password, SALT_ROUNDS) // hash it real good!
     .then((hashedPassword) => {
       const user = new User(email, hashedPassword);
       userDatabase[user.id] = user;
@@ -123,7 +125,7 @@ const registerUser = async function(userDatabase, email, password, cookie, respo
       return response.redirect('/urls'); // welcome
     })
     .catch(() => {
-      return renderUnauthorized(ERROR_MSG.validationFail(), response, null, 500); // argon2 dropped the ball
+      return renderUnauthorized(ERROR_MSG.validationFail(), response, null, 500); // bcrypt dropped the ball
     });
 };
 
