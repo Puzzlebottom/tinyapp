@@ -3,6 +3,16 @@ const { User } = require('../scripts/entities/user');
 
 const { ALPHANUMERIC_CHARS, EMAIL_VALIDATION_REGEX, ERROR_MSG } = require('./constants');
 
+/**
+ * checkAuthorization() verifies the provided password: string against the
+ * has stored in user: object.  If the validation is successful the User method
+ * giveCookie() is called with the cookie object (req.session is passed as an argument
+ * here for this purpose.)
+ *
+ * Redirects are returned in the case of an invalid password, or if the hashing
+ * function fails.
+ */
+
 const checkAuthorization = async function(user, password, cookie, response) {
   await argon2.verify(user.password, password) // https://github.com/Puzzlebottom/tinyapp/tree/feature/bcrypt for bcrypt version
     .then((isValidPassword) => {
@@ -17,18 +27,36 @@ const checkAuthorization = async function(user, password, cookie, response) {
     });
 };
 
+/**
+ * checkPermissions() takes a user: object and a url: object and
+ * compares the values to validate permission. A redirect is triggered on
+ * the response: object if the validation returns false.
+ */
+
 const checkPermissions = (user, url, response) => {
   if (url.userID !== user.id) {
     return renderUnauthorized(ERROR_MSG.notOwned(url.id), response, user); // put the bunny back in the box
   }
 };
 
+/**
+ * enterWithValidCookie() is a simple redirect to the /urls endpoint
+ * if the user possesses a valid cookie. While modularizing this function
+ * does do dry the code out, it improves readability quite a bit.
+ */
+
 const enterWithValidCookie = (cookie, response) => {
   if (cookie.user_id) return response.redirect('/urls'); // pass with a valid cookie
 };
 
+/**
+ * exitWithNoValidCookie() provides a similar but opposite short-circuit
+ * as above, triggering a redirect on the response object if the user is
+ * missing a valid cookie.
+ */
+
 const exitWithNoValidCookie = (cookie, response) => {
-  if (!cookie['user_id']) return renderUnauthorized(ERROR_MSG.notLoggedIn(), response);
+  if (!cookie.user_id) return renderUnauthorized(ERROR_MSG.notLoggedIn(), response);
 };
 
 /**
@@ -75,6 +103,16 @@ const getUserByEmail = function(users, email) {
     if (user.email === email) return user;
   }
 };
+
+/**
+ * registerUser() provides a straighforward function but has alot
+ * of moving pieces. Making it live with the helpers improves the
+ * readability of the code.
+ *
+ * It either triggers redirects on the response object either to
+ * the /urls endpoint (if registration is successful) or displays
+ * an error if the hashing function fails.
+ */
 
 const registerUser = async function(userDatabase, email, password, cookie, response) {
   await argon2.hash(password) // hash it real good!

@@ -4,7 +4,16 @@ const { ERROR_MSG, SESSION_COOKIE_KEYS, PORT } = require('./public/scripts/const
 
 const cookieSession = require('cookie-session');
 const express = require('express');
-const { checkAuthorization, checkPermissions, enterWithValidCookie, exitWithNoValidCookie, generateRandomString, getUserByEmail, registerUser, renderUnauthorized, urlsForUser } = require('./public/scripts/helpers');
+const {
+  checkAuthorization,
+  checkPermissions,
+  enterWithValidCookie,
+  exitWithNoValidCookie,
+  generateRandomString,
+  getUserByEmail,
+  registerUser,
+  renderUnauthorized,
+  urlsForUser } = require('./public/scripts/helpers');
 const methodOverride = require('method-override');
 const morgan = require('morgan');
 const { v4: uuidv4 } = require('uuid');
@@ -34,8 +43,8 @@ app.use(cookieSession({
  */
 
 app.get('/', (req, res) => {
-  const cookie = req.session; //check cookie
-  enterWithValidCookie(cookie, res);
+  const cookie = req.session;
+  enterWithValidCookie(cookie, res); //check cookie
   return res.redirect('/register'); // otherwise bounce them.
 });
 
@@ -44,8 +53,8 @@ app.get('/', (req, res) => {
  */
 
 app.get('/login', (req, res) => {
-  const cookie = req.session; // check cookie
-  enterWithValidCookie(cookie, res);
+  const cookie = req.session;
+  enterWithValidCookie(cookie, res);// check cookie
   const user = users[cookie.user_id];
   return res.render('login', { user }); // or send to to login
 });
@@ -54,7 +63,7 @@ app.post('/login', (req, res) => {
   const { email, password } = req.body;
   const user = getUserByEmail(users, email);
   if (user) {
-    return checkAuthorization(user, password, req.session, res);
+    return checkAuthorization(user, password, req.session, res); // if their creds are valid, let 'em in.
   }
   return renderUnauthorized(ERROR_MSG.noAccount(email), res, null, 401); // we don't know who you are
 });
@@ -70,7 +79,7 @@ app.post('/logout', (req, res) => {
 
 app.get('/register', (req, res) => {
   const cookie = req.session;  // gimme a cookie
-  enterWithValidCookie(cookie, res);
+  enterWithValidCookie(cookie, res); // if it's tasty you can head on in
   const user = users[cookie.user_id];
   return res.render('register', { user }); // or else you have to sign up
 });
@@ -110,18 +119,18 @@ app.get('/urls/new', (req, res) => {
 });
 
 app.post('/urls', (req, res) => {
-  const userID = req.session['user_id']; // what has it gots in its pocketses, precious? A cookie?
-  if (!userID) { // since there shouldn't be a way to hit this endpoint in the browser, you must be cURLing it.
+  const cookie = req.session; // what has it gots in its pocketses, precious? A cookie?
+  if (!cookie.user_id) { // since there shouldn't be a way to hit this endpoint in the browser, you must be cURLing it.
     return res.send('UNAUTHORIZED: You must have a registered account and be logged in in order to use TinyURL.\n\n'); // we'll log the response where you can see it.
   }
 
   const { longURL } = req.body;
   const id = generateRandomString(urlDatabase, 6);
-  const url = new TinyURL(id, longURL, userID); // we built a urlObject!
+  const url = new TinyURL(id, longURL, cookie.user_id); // we built a urlObject!
 
   urlDatabase[url.id] = url; //and stored it
 
-  const user = users[userID];
+  const user = users[cookie.user_id];
   return res.render('urls_show', { user, url }); // let's take a closer look at what we made.
 });
 
